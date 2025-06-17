@@ -1,22 +1,30 @@
-import React, { useState } from 'react';
-import { LockClosedIcon, EnvelopeIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { EnvelopeIcon, LockClosedIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import {useLogin} from '../../hooks/useLogin';
+import {isAuthenticated}from '../../services/api'
+
 
 const LoginPage = () => {
-  const [Username, setUsername] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { loginUser, loading, error } = useLogin();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    setMounted(true);
+    
+    if (isAuthenticated()) {
+      navigate('/');
+    }
+  }, [navigate]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    // Aquí iría tu lógica de autenticación
-    console.log({ Username, password });
-    // Simulando una llamada API
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+    await loginUser({ username, password });
   };
 
   return (
@@ -31,9 +39,9 @@ const LoginPage = () => {
 
           {/* Formulario */}
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Campo Email */}
+            {/* Campo Username */}
             <div>
-              <label htmlFor="Username" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
                 Username
               </label>
               <div className="relative">
@@ -41,15 +49,15 @@ const LoginPage = () => {
                   <EnvelopeIcon className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  id="Username"
-                  name="Username"
-                  type="Username"
-                  autoComplete="Username"
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
                   required
-                  value={Username}
+                  value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="tu_Username"
+                  placeholder="tu_usuario"
                 />
               </div>
             </div>
@@ -111,14 +119,21 @@ const LoginPage = () => {
               </div>
             </div>
 
+            {/* Mostrar error si existe */}
+            {error && (
+              <div className="text-red-500 text-sm text-center">
+                {error}
+              </div>
+            )}
+
             {/* Botón de Login */}
             <div>
               <button
                 type="submit"
-                disabled={isLoading}
-                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}`}
+                disabled={loading}
+                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${loading ? 'opacity-75 cursor-not-allowed' : ''}`}
               >
-                {isLoading ? (
+                {loading ? (
                   <>
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

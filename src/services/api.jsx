@@ -1,44 +1,43 @@
 import axios from "axios";
-import { logout } from "../shared/hooks/useLogout";
 
 const apiClient = axios.create({
-    baseURL: 'http://127.0.0.1:8080/twitch/v1',
-    timeout: 5000
-})
+  baseURL: "http://127.0.0.1:3000/AlmacenadoraG1/vlm/",
+  timeout: 5000,
+});
 
-apiClient.interceptors.request.use(
-    (config) => {
-        const useUserDetails = localStorage.getItem('user')
-
-        if(useUserDetails){
-            const token = JSON.parse(useUserDetails).token
-            config.headers.Authorization = `Bearer ${token}`
-        }
-
-        return config;
-    },
-    (e) => {
-        return Promise.reject(e)
-    }
-)
-export const login = async(data) => {
+export const login = async (data) => {
     try {
-        return await apiClient.post('/auth/login', data)
+      const response = await apiClient.post("/users/login", data);
+      console.log("Login response:", response);
+      return response;
     } catch (e) {
-        return{
-            error: true,
-            e
-        }
+      return {
+        error: true,
+        e,
+      };
     }
-}
-
-export const register = async(data) => {
+  };
+  
+  export const register = async (data) => {
     try {
-        return await apiClient.post('/auth/register', data)
+      const response = await apiClient.post("/users/register", data);
+      return { data: response.data };
     } catch (e) {
-        return{
-            error: true,
-            e
-        }
+      console.log("Error en el registro:", e.response);
+      if (e.response && e.response.data && e.response.data.errors) {
+        const errors = e.response.data.errors;
+        errors.forEach((error) => {
+          console.log(`Error: ${JSON.stringify(error)}`);
+        });
+      }
+  
+      return {
+        error: true,
+        response: e.response,
+      };
     }
-}
+  };
+  export const isAuthenticated = () => {
+    const userDetails = localStorage.getItem("user");
+    return !!userDetails;
+};
