@@ -1,40 +1,52 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login as loginRequest } from '../../services'
+import { login as loginRequest } from '../../services';
 import toast from "react-hot-toast";
 
 export const useLogin = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
-    const [isLoading, setIsLoading] = useState(false);
+  const login = async (username, password) => {
+    setIsLoading(true);
+    try {
+      const response = await loginRequest({ username, password });
+      
+      if (response.error) {
+        toast.error("Credenciales incorrectas");
+        return { error: true };
+      }
 
-    const navigate = useNavigate();
-
-    const login = async (email, password) => {
-
-        setIsLoading(true);
-
-        const response = await loginRequest({email, password})
-
-        setIsLoading(false);
-
-        console.log(response)
-
-        if(response.error){
-            return toast.error(response.error?.response?.data || 'Ocurrio un error al iniciar sesion, intenta de nuevo')
-        }
-
-        const { userDetails } = response.data
-
-        localStorage.setItem('user', JSON.stringify(userDetails));
-
-        toast.success('Sesion iniciada correctamente')
-
-        navigate('/')
+      // Verificar estructura de respuesta según API spec
+      if (response.data?.userDetails?.token) {
+        // Crear objeto usuario completo con la estructura correcta
+        const userData = {
+          ...response.data.userDetails,
+          token: response.data.userDetails.token
+        };
+        
+        localStorage.setItem("user", JSON.stringify(userData));
+        
+        // Disparar evento de cambio de estado
+        window.dispatchEvent(new Event('userStatusChange'));
+        
+        toast.success('Sesión iniciada correctamente');
+        navigate('/');
+        return { success: true, data: userData };
+      } else {
+        toast.error("Error en la respuesta del servidor");
+        return { error: true };
+      }
+    } catch (error) {
+      toast.error("Error de conexión");
+      return { error: true };
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    return {
-        login,
-        isLoading,
-    }
-}
+  return {
+    login,
+    isLoading,
+  };
+};

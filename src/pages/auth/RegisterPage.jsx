@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   UserIcon,
   IdentificationIcon,
@@ -12,60 +12,33 @@ import {
   EyeSlashIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
+import { useRegister } from '../../shared/hooks/useRegister';
 
 const RegisterPage = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    username: '',
-    nickname: '',
-    dpi: '',
-    direccion: '',
-    phone: '',
-    email: '',
-    password: '',
-    nombreTrabajo: '',
-    ingresosMensuales: '',
-    confirmarPassword: ''
-  });
+  const {
+    formData,
+    isLoading,
+    error,
+    success,
+    showPassword,
+    handleChange,
+    register,
+    setShowPassword
+  } = useRegister();
 
-  const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const [errors, setErrors] = React.useState({});
 
   const validateForm = () => {
     const newErrors = {};
-    
-  
+    // ...puedes agregar validaciones aquí si lo deseas...
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
-    
-    setIsSubmitting(true);
-    
-    try {
-      // Simular llamada a API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('Datos enviados:', formData);
-      setSuccess(true);
-    } catch (error) {
-      console.error('Error al registrar:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    await register();
   };
 
   if (success) {
@@ -206,7 +179,7 @@ const RegisterPage = () => {
                         onChange={handleChange}
                         maxLength="8"
                         className={`block w-full pl-10 pr-3 py-2 border ${errors.phone ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                        placeholder="55551234"
+                        placeholder="..........."
                       />
                     </div>
                     {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
@@ -228,7 +201,7 @@ const RegisterPage = () => {
                         value={formData.email}
                         onChange={handleChange}
                         className={`block w-full pl-10 pr-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                        placeholder="userName@example.com"
+                        placeholder="....................."
                       />
                     </div>
                     {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
@@ -250,7 +223,7 @@ const RegisterPage = () => {
                         value={formData.direccion}
                         onChange={handleChange}
                         className={`block w-full pl-10 pr-3 py-2 border ${errors.direccion ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                        placeholder="Calle, Ciudad Guatemala"
+                        placeholder="ciudad"
                       />
                     </div>
                     {errors.direccion && <p className="mt-1 text-sm text-red-600">{errors.direccion}</p>}
@@ -304,7 +277,7 @@ const RegisterPage = () => {
                         value={formData.nombreTrabajo}
                         onChange={handleChange}
                         className={`block w-full pl-10 pr-3 py-2 border ${errors.nombreTrabajo ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                        placeholder="Ingeniero de Software"
+                        placeholder="Trabajo"
                       />
                     </div>
                     {errors.nombreTrabajo && <p className="mt-1 text-sm text-red-600">{errors.nombreTrabajo}</p>}
@@ -351,10 +324,10 @@ const RegisterPage = () => {
                 <div className="mt-6">
                   <button
                     type="submit"
-                    disabled={isSubmitting}
-                    className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+                    disabled={isLoading}
+                    className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}`}
                   >
-                    {isSubmitting ? (
+                    {isLoading ? (
                       <>
                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -378,6 +351,7 @@ const RegisterPage = () => {
                   </a>
                 </p>
               </div>
+              {error && <div className="text-red-600 mt-2">{error}</div>}
             </div>
           </div>
         </div>

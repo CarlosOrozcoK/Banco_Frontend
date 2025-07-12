@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { register as registerApi } from "../../services/api";
 
 export const useRegister = () => {
     const [formData, setFormData] = useState({
@@ -34,24 +35,25 @@ export const useRegister = () => {
     const register = async () => {
         setIsLoading(true);
         setError(null);
-        
-        try {
-            // Extract the needed fields for the registerRequest
-            const { email, password, username } = formData;
-            const response = await registerRequest({ email, password, username });
 
-            if(response.error) {
-                setError(response.error?.response?.data || 'Ocurrió un error al registrar, intenta de nuevo');
-                toast.error(response.error?.response?.data || 'Ocurrió un error al registrar, intenta de nuevo');
+        try {
+            // Extrae todos los campos necesarios del formData
+            const response = await registerApi(formData); // <-- Usa la función importada
+
+            if (response.error) {
+                setError(response.response?.data || 'Ocurrió un error al registrar, intenta de nuevo');
+                toast.error(response.response?.data || 'Ocurrió un error al registrar, intenta de nuevo');
                 return;
             }
 
-            const { userDetails } = response.data;
-            localStorage.setItem('user', JSON.stringify(userDetails));
-            
+            const { userDetails } = response.data || {};
+            if (userDetails) {
+                localStorage.setItem('user', JSON.stringify(userDetails));
+            }
+
             setSuccess(true);
             toast.success('Usuario registrado exitosamente');
-            navigate('/');
+            navigate('/login');
         } catch (err) {
             setError('Ocurrió un error al registrar, intenta de nuevo');
             toast.error('Ocurrió un error al registrar, intenta de nuevo');
