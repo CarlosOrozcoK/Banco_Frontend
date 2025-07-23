@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:3000/Backend_Banco/v1';
+const BASE_URL = 'https://banco-backend-qzuk.onrender.com/Backend_Banco/v1';
 
 // Crear instancia de axios
 const apiClient = axios.create({
