@@ -1,0 +1,72 @@
+{
+    "routes":[
+        {
+            "src": "/",
+            "dest": "/"
+        },
+        {
+            "src": "/",
+            "dest": "/HomePage"
+        },
+        {
+            "src": "/",
+            "dest": "/admin"
+        },
+        {
+            "src": "/",
+            "dest": "/login"
+        },
+        {
+            "src": "/",
+            "dest": "/Register"
+        },
+        {
+            "src": "/",
+            "dest": "/ContactList"
+        },
+        {
+            "src": "/",
+            "dest": "/HelpList"
+        },
+        {
+            "src": "/",
+            "dest": "/NProducts/:id"
+        },
+        {
+            "src": "/",
+            "dest": "/products/loans"
+        },
+        {
+            "src": "/",
+            "dest": "/products/insurance"
+        },
+        {
+            "src": "/",
+            "dest": "/products/stocks"
+        },
+        {
+            "src": "/",
+            "dest": "/products/transfer"
+        },
+        {
+            "src": "/",
+            "dest": "/credit-card/request"
+        },
+        {
+            "src": "/",
+            "dest": "/account/Balance"
+        },
+        {
+            "src": "/",
+            "dest": "/plan-selector"
+        },
+        {
+            "src": "/",
+            "dest": "/broker"
+        },
+        {
+            "src": "/",
+            "dest": "/welcome"
+        }
+    ]
+}
