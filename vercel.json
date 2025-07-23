@@ -5,68 +5,68 @@
             "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/HomePage"
+            "src": "/HomePage",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/admin"
+            "src": "/admin",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/login"
+            "src": "/login",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/Register"
+            "src": "/Register",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/ContactList"
+            "src": "/ContactList",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/HelpList"
+            "src": "/HelpList",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/NProducts/:id"
+            "src": "/NProducts/:id",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/products/loans"
+            "src": "/products/loans",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/products/insurance"
+            "src": "/products/insurance",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/products/stocks"
+            "src": "/products/stocks",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/products/transfer"
+            "src": "/products/transfer",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/credit-card/request"
+            "src": "/credit-card/request",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/account/Balance"
+            "src": "/account/Balance",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/plan-selector"
+            "src": "/plan-selector",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/broker"
+            "src": "/broker",
+            "dest": "/"
         },
         {
-            "src": "/",
-            "dest": "/welcome"
+            "src": "/welcome",
+            "dest": "/"
         }
     ]
 }
