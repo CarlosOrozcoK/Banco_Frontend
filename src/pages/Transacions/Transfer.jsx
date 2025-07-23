@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { PaperAirplaneIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import { transfer, getUserAccounts, isAuthenticated } from '../../services/api';
 import { Navbar } from '../../components/navbar';
@@ -27,45 +27,28 @@ const TransferPage = () => {
   const loadUserAccounts = async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user"));
-      console.log('Usuario desde localStorage:', user);
-      
-      // Intentar diferentes formas de obtener el ID del usuario
       const userId = user?.id || user?.userId || user?._id || user?.uid;
-      console.log('UserId encontrado:', userId);
-      
+
       if (!userId) {
         setError("No se encontró información del usuario. Intenta cerrar sesión e iniciar nuevamente.");
-        console.error('No se pudo obtener userId del usuario:', user);
         return;
       }
 
-      console.log('Haciendo petición a getUserAccounts con userId:', userId);
       const accountsResult = await getUserAccounts(userId);
-      console.log('Resultado de getUserAccounts:', accountsResult);
-      
+
       if (accountsResult.error) {
         setError("Error al cargar cuentas: " + accountsResult.error);
-        console.error('Error en getUserAccounts:', accountsResult.error);
-      } else if (accountsResult.data?.accounts) {
-        console.log('Cuentas encontradas:', accountsResult.data.accounts);
+      } else if (accountsResult.data?.accounts && accountsResult.data.accounts.length > 0) {
         setUserAccounts(accountsResult.data.accounts);
-        if (accountsResult.data.accounts.length > 0) {
-          setSelectedAccount(accountsResult.data.accounts[0]._id);
-        }
-      } else if (accountsResult.accounts) {
-        // Caso alternativo si las cuentas vienen directamente
-        console.log('Cuentas encontradas (formato alternativo):', accountsResult.accounts);
+        setSelectedAccount(accountsResult.data.accounts[0].aid);
+      } else if (accountsResult.accounts && accountsResult.accounts.length > 0) {
         setUserAccounts(accountsResult.accounts);
-        if (accountsResult.accounts.length > 0) {
-          setSelectedAccount(accountsResult.accounts[0]._id);
-        }
+        setSelectedAccount(accountsResult.accounts[0].aid);
       } else {
         setError("No se encontraron cuentas activas");
-        console.log('No se encontraron cuentas en la respuesta:', accountsResult);
       }
     } catch (error) {
       setError('Error al cargar las cuentas');
-      console.error('Error en loadUserAccounts:', error);
     }
   };
 
@@ -74,13 +57,6 @@ const TransferPage = () => {
     setLoading(true);
     setError('');
     setResult(null);
-
-    console.log('Iniciando transferencia con datos:', {
-      selectedAccount,
-      destinationAccount,
-      amount,
-      message
-    });
 
     if (!selectedAccount) {
       setError('Por favor selecciona una cuenta de origen');
@@ -107,31 +83,21 @@ const TransferPage = () => {
         description: message || 'Transferencia bancaria'
       };
 
-      console.log('Enviando transferencia:', {
-        originAccount: selectedAccount,
-        transferData
-      });
-
       const response = await transfer(selectedAccount, transferData);
-      console.log('Respuesta de transferencia:', response);
-      
+
       if (response.error) {
         setError(response.error);
       } else if (response.msg) {
         setResult(response.msg || 'Transferencia realizada exitosamente');
-        // Limpiar formulario
         setDestinationAccount('');
         setAmount('');
         setMessage('');
-        // Recargar cuentas para actualizar saldos
         loadUserAccounts();
       } else {
         setError('Respuesta inesperada del servidor');
-        console.log('Respuesta no esperada:', response);
       }
     } catch (error) {
       setError('Error de conexión. Intenta nuevamente.');
-      console.error('Error en transferencia:', error);
     } finally {
       setLoading(false);
     }
@@ -143,23 +109,17 @@ const TransferPage = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-center">
               <h1 className="text-2xl font-bold text-white">Transferencia</h1>
               <p className="text-blue-100 mt-1">Transfiere a cualquier cuenta</p>
             </div>
-
-            {/* Información de debug temporal */}
             <div className="bg-yellow-50 p-3 rounded-lg text-xs text-yellow-800 mb-4">
               <p><strong>Debug Info:</strong></p>
               <p>Usuario: {JSON.parse(localStorage.getItem('user') || '{}').username || 'No encontrado'}</p>
               <p>Cuentas cargadas: {userAccounts.length}</p>
               <p>Cuenta seleccionada: {selectedAccount || 'Ninguna'}</p>
             </div>
-
-            {/* Formulario */}
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              {/* Cuenta origen */}
               {userAccounts.length > 0 && (
                 <div>
                   <label htmlFor="originAccount" className="block text-sm font-medium text-gray-700 mb-1">
@@ -171,16 +131,16 @@ const TransferPage = () => {
                     onChange={(e) => setSelectedAccount(e.target.value)}
                     className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
+                    <option value="">Selecciona una cuenta</option>
                     {userAccounts.map((account) => (
-                      <option key={account._id} value={account._id}>
+                      <option key={account.aid} value={account.aid}>
                         {account.noCuenta} - {account.tipoCuenta} (Q{account.saldo?.toFixed(2)})
                       </option>
                     ))}
                   </select>
+
                 </div>
               )}
-
-              {/* Cuenta destino */}
               <div>
                 <label htmlFor="destinationAccount" className="block text-sm font-medium text-gray-700 mb-1">
                   ID de Cuenta destino
@@ -205,7 +165,6 @@ const TransferPage = () => {
                 </p>
               </div>
 
-              {/* Monto */}
               <div>
                 <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
                   Monto
@@ -229,7 +188,6 @@ const TransferPage = () => {
                 </div>
               </div>
 
-              {/* Mensaje / Concepto */}
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
                   Descripción (opcional)
@@ -245,7 +203,6 @@ const TransferPage = () => {
                 />
               </div>
 
-              {/* Mensajes de estado */}
               {error && (
                 <div className="text-red-500 text-sm text-center mb-2 bg-red-50 p-3 rounded-lg">
                   {error}
@@ -257,13 +214,11 @@ const TransferPage = () => {
                 </div>
               )}
 
-              {/* Información adicional */}
               <div className="bg-blue-50 p-3 rounded-lg text-xs text-blue-700">
                 <p><strong>Nota:</strong> La transferencia se realizará inmediatamente entre las cuentas especificadas.</p>
                 <p>Verifica que el ID de cuenta destino sea correcto antes de confirmar.</p>
               </div>
 
-              {/* Botón transferir */}
               <div>
                 <button
                   type="submit"
@@ -305,7 +260,7 @@ const TransferPage = () => {
           </div>
         </div>
       </div>
-      <Footer 
+      <Footer
         products={[
           { id: 1, title: 'Cuentas de Ahorro' },
           { id: 2, title: 'Tarjetas de Crédito' },

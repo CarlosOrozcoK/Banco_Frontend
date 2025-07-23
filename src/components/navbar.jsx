@@ -22,8 +22,8 @@ export const Navbar = ({ onLoginClick }) => {
 
         // Actualizar la lógica para detectar admin con ADMINB
         const isAdminUser =
-          userData.role === "admin" ||
-          userData.email?.includes("admin") ||
+          userData.role === "ADMIN_ROLE" ||
+          userData.email?.includes("ADMIN_ROLE") ||
           userData.isAdmin ||
           userData.username === "ADMINB" ||
           userData.username?.toLowerCase().includes("admin");
@@ -79,12 +79,12 @@ export const Navbar = ({ onLoginClick }) => {
           onClick={() => navigate("/HomePage")}
         >
           <div className="bg-white p-2 rounded-lg">
-            <img
-              src="./src/assets/Logo Banco Nacional de Guatemala.png"
-              alt="Logo Banco de Guatemala"
-              className="h-8 w-8 object-contain"
-            />
-          </div>
+    <img
+      src="./src/assets/Logo Banco Nacional de Guatemala.png"
+      alt="Logo Banco de Guatemala"
+      className="h-8 w-8 object-contain"
+    />
+  </div>
           <h1 className="text-2xl font-bold text-white">Banco de Guatemala</h1>
         </div>
 

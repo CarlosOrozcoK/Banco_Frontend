@@ -27,30 +27,6 @@ function RequireAuth({ children }) {
   return children;
 }
 
-function RequireAdmin({ children }) {
-  const userStr = localStorage.getItem("user");
-  if (!userStr) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  try {
-    const user = JSON.parse(userStr);
-    const isAdmin = user?.isAdmin || 
-                   user?.role === 'admin' || 
-                   user?.email?.includes('admin') ||
-                   user?.username === 'ADMINB' ||
-                   user?.username?.toLowerCase().includes('admin');
-    
-    if (!isAdmin) {
-      return <Navigate to="/HomePage" replace />;
-    }
-    
-    return children;
-  } catch (error) {
-    return <Navigate to="/login" replace />;
-  }
-}
-
 const routes = [
   {
     path: "/HomePage",
@@ -63,9 +39,7 @@ const routes = [
   {
     path: "/admin",
     element: (
-      <RequireAdmin>
         <AdminPanel />
-      </RequireAdmin>
     ),
   },
   { path: "/", element: <Navigate to={"/login"} /> },

@@ -179,7 +179,7 @@ const RegisterPage = () => {
                         onChange={handleChange}
                         maxLength="8"
                         className={`block w-full pl-10 pr-3 py-2 border ${errors.phone ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                        placeholder="..........."
+                        placeholder="55551234"
                       />
                     </div>
                     {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
@@ -201,7 +201,7 @@ const RegisterPage = () => {
                         value={formData.email}
                         onChange={handleChange}
                         className={`block w-full pl-10 pr-3 py-2 border ${errors.email ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                        placeholder="....................."
+                        placeholder="userName@example.com"
                       />
                     </div>
                     {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
@@ -223,7 +223,7 @@ const RegisterPage = () => {
                         value={formData.direccion}
                         onChange={handleChange}
                         className={`block w-full pl-10 pr-3 py-2 border ${errors.direccion ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                        placeholder="ciudad"
+                        placeholder="Calle, Ciudad Guatemala"
                       />
                     </div>
                     {errors.direccion && <p className="mt-1 text-sm text-red-600">{errors.direccion}</p>}
@@ -277,7 +277,7 @@ const RegisterPage = () => {
                         value={formData.nombreTrabajo}
                         onChange={handleChange}
                         className={`block w-full pl-10 pr-3 py-2 border ${errors.nombreTrabajo ? 'border-red-300' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-                        placeholder="Trabajo"
+                        placeholder="Ingeniero de Software"
                       />
                     </div>
                     {errors.nombreTrabajo && <p className="mt-1 text-sm text-red-600">{errors.nombreTrabajo}</p>}

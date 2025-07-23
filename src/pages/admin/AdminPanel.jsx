@@ -17,11 +17,11 @@ import {
   CogIcon
 } from '@heroicons/react/24/outline';
 import { Navbar } from '../../components/navbar';
-import { 
-  getAllUsers, 
+import {
+  getAllUsers,
   createAccount,
   getAllAccounts,
-  getCreditRequests, 
+  getCreditRequests,
   processCredit,
   requestCredit,
   getRecentMovements,
@@ -31,8 +31,7 @@ import {
   deleteService,
   updateUser,
   deleteUser,
-  isAuthenticated,
-  isAdmin
+  isAuthenticated
 } from '../../services/api';
 
 const AdminPanel = () => {
@@ -48,33 +47,27 @@ const AdminPanel = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userString = localStorage.getItem('user');
-    
+
     try {
       const user = userString ? JSON.parse(userString) : null;
-      
-      // Verificación manual paso a paso - usar el token del usuario si no hay token separado
+
+      // Verificar que haya usuario y token
       const userToken = user?.token;
       const hasToken = !!(token || userToken);
       const hasUser = !!user;
-      const isAdminUser = user?.username === 'ADMINB';
-      
+
       // Si no hay token en localStorage separado, usar el del usuario
       if (!token && userToken) {
         localStorage.setItem('token', userToken);
       }
-      
+
       if (!hasToken || !hasUser) {
         navigate('/login');
         return;
       }
-      
-      if (!isAdminUser) {
-        navigate('/HomePage');
-        return;
-      }
-      
+
       loadSectionData(activeSection);
-      
+
     } catch (error) {
       navigate('/login');
     }
@@ -85,7 +78,9 @@ const AdminPanel = () => {
     try {
       let normalizedData = [];
       let result = {};
-      
+
+      console.log(`🔄 Cargando datos para sección: ${section}`);
+
       switch (section) {
         case 'users':
           result = await getAllUsers();
@@ -105,42 +100,66 @@ const AdminPanel = () => {
         default:
           result = { data: [] };
       }
-      
+
+      console.log(`📊 Respuesta de la API para ${section}:`, result);
+
       // Normalizar la respuesta de la API
-      if (result && result.data) {
-        if (Array.isArray(result.data)) {
-          normalizedData = result.data;
-        } else if (result.data.movements && Array.isArray(result.data.movements)) {
-          normalizedData = result.data.movements;
-        } else if (result.data.accounts && Array.isArray(result.data.accounts)) {
-          normalizedData = result.data.accounts;
-        } else if (result.data.credits && Array.isArray(result.data.credits)) {
-          normalizedData = result.data.credits;
-        } else if (result.data.services && Array.isArray(result.data.services)) {
-          normalizedData = result.data.services;
-        } else if (typeof result.data === 'object') {
-          normalizedData = [result.data];
-        }
-      } else if (result && result.services && Array.isArray(result.services)) {
-        normalizedData = result.services;
-      } else if (result && result.error) {
-        if (result.error.includes('no identificado') || result.error.includes('unauthorized')) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          navigate('/login');
-          return;
+      if (result) {
+        if (Array.isArray(result)) {
+          // Si la respuesta es directamente un array
+          normalizedData = result;
+        } else if (result.accounts && Array.isArray(result.accounts)) {
+          // Para cuentas que vienen en result.accounts
+          normalizedData = result.accounts;
+        } else if (result.data) {
+          // Si los datos están en la propiedad 'data'
+          if (Array.isArray(result.data)) {
+            normalizedData = result.data;
+          } else if (result.data.movements && Array.isArray(result.data.movements)) {
+            normalizedData = result.data.movements;
+          } else if (result.data.accounts && Array.isArray(result.data.accounts)) {
+            normalizedData = result.data.accounts;
+          } else if (result.data.credits && Array.isArray(result.data.credits)) {
+            normalizedData = result.data.credits;
+          } else if (result.data.services && Array.isArray(result.data.services)) {
+            normalizedData = result.data.services;
+          } else if (typeof result.data === 'object') {
+            normalizedData = [result.data];
+          }
+        } else if (result.services && Array.isArray(result.services)) {
+          normalizedData = result.services;
+        } else if (result.users && Array.isArray(result.users)) {
+          normalizedData = result.users;
+        } else if (result.credits && Array.isArray(result.credits)) {
+          normalizedData = result.credits;
+        } else if (result.transactions && Array.isArray(result.transactions)) {
+          normalizedData = result.transactions;
+        } else if (result.movements && Array.isArray(result.movements)) {
+          normalizedData = result.movements;
+        } else if (result.error) {
+          if (result.error.includes('no identificado') || result.error.includes('unauthorized')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            navigate('/login');
+            return;
+          }
+        } else if (typeof result === 'object') {
+          normalizedData = [result];
         }
       }
-      
+
+      console.log(`✅ Datos normalizados para ${section}:`, normalizedData);
+
       setData(prev => ({ ...prev, [section]: normalizedData }));
     } catch (error) {
+      console.error(`❌ Error cargando datos para ${section}:`, error);
       if (error.response?.status === 401 || error.message?.includes('unauthorized')) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         navigate('/login');
         return;
       }
-      
+
       setData(prev => ({ ...prev, [section]: [] }));
     } finally {
       setLoading(false);
@@ -178,7 +197,7 @@ const AdminPanel = () => {
           result = { data: newItem };
           break;
       }
-      
+
       if (!result.error) {
         alert('Creado exitosamente');
         setShowModal(false);
@@ -204,9 +223,29 @@ const AdminPanel = () => {
         case 'users':
           result = await updateUser(selectedItem._id || selectedItem.id, formData);
           break;
-        case 'credits':
-          result = await processCredit(selectedItem._id || selectedItem.id, formData);
+        case 'credits': {
+          // Para créditos, enviar datos específicos según aprobación o rechazo
+          let creditData;
+          if (modalType === 'approve') {
+            creditData = {
+              approve: true,
+              dueDate: formData.dueDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 año por defecto
+              observations: formData.observations || "Aprobado por buen historial",
+              accountId: selectedItem.account?._id || selectedItem.account?.id || selectedItem.accountId
+            };
+          } else if (modalType === 'reject') {
+            creditData = {
+              approve: false,
+              dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
+              observations: formData.observations || "Denegado por mal historial",
+              accountId: selectedItem.account?._id || selectedItem.account?.id || selectedItem.accountId
+            };
+          } else {
+            creditData = formData;
+          }
+          result = await processCredit(selectedItem.cid || selectedItem._id || selectedItem.id, creditData);
           break;
+        }
         case 'services':
           result = await updateService(selectedItem._id || selectedItem.id, formData);
           break;
@@ -216,14 +255,14 @@ const AdminPanel = () => {
           // Simular actualización
           setData(prev => ({
             ...prev,
-            [activeSection]: prev[activeSection].map(item => 
+            [activeSection]: prev[activeSection].map(item =>
               item.id === selectedItem.id ? { ...item, ...formData } : item
             )
           }));
           result = { data: { ...selectedItem, ...formData } };
           break;
       }
-      
+
       if (!result.error) {
         alert('Actualizado exitosamente');
         setShowModal(false);
@@ -243,7 +282,7 @@ const AdminPanel = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('¿Estás seguro de eliminar este elemento?')) return;
-    
+
     setLoading(true);
     try {
       let result = {};
@@ -265,7 +304,7 @@ const AdminPanel = () => {
           result = { data: { success: true } };
           break;
       }
-      
+
       if (!result.error) {
         alert('Eliminado exitosamente');
         if (['users', 'accounts', 'credits', 'services'].includes(activeSection)) {
@@ -282,6 +321,7 @@ const AdminPanel = () => {
   };
 
   const openModal = (type, item = null) => {
+    console.log("Abriendo modal con:", { type, item }); 
     setModalType(type);
     setSelectedItem(item);
     setFormData(item || {});
@@ -367,9 +407,8 @@ const AdminPanel = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.estado ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${user.estado ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
                           {user.estado ? 'Activo' : 'Inactivo'}
                         </span>
                         <div className="text-xs text-gray-500 mt-1">
@@ -377,22 +416,22 @@ const AdminPanel = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        <button 
-                          onClick={() => openModal('view', user)} 
+                        <button
+                          onClick={() => openModal('view', user)}
                           className="text-green-600 hover:text-green-900"
                           title="Ver detalles"
                         >
                           <EyeIcon className="h-4 w-4" />
                         </button>
-                        <button 
-                          onClick={() => openModal('edit', user)} 
+                        <button
+                          onClick={() => openModal('edit', user)}
                           className="text-blue-600 hover:text-blue-900"
                           title="Editar"
                         >
                           <PencilIcon className="h-4 w-4" />
                         </button>
-                        <button 
-                          onClick={() => handleDelete(user._id || user.id)} 
+                        <button
+                          onClick={() => handleDelete(user._id || user.id)}
                           className="text-red-600 hover:text-red-900"
                           title="Eliminar"
                         >
@@ -410,7 +449,7 @@ const AdminPanel = () => {
                 </tbody>
               </table>
             </div>
-            
+
             {/* Estadísticas adicionales */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white p-4 rounded-lg shadow">
@@ -432,8 +471,8 @@ const AdminPanel = () => {
               <div className="bg-white p-4 rounded-lg shadow">
                 <div className="text-sm font-medium text-gray-500">Promedio Ingresos</div>
                 <div className="text-2xl font-bold text-purple-600">
-                  Q{safeCurrentData.length > 0 ? 
-                    Math.round(safeCurrentData.reduce((sum, user) => sum + (user.ingresosMensuales || 0), 0) / safeCurrentData.length).toLocaleString() 
+                  Q{safeCurrentData.length > 0 ?
+                    Math.round(safeCurrentData.reduce((sum, user) => sum + (user.ingresosMensuales || 0), 0) / safeCurrentData.length).toLocaleString()
                     : '0'}
                 </div>
               </div>
@@ -463,7 +502,7 @@ const AdminPanel = () => {
                 </button>
               </div>
             </div>
-            
+
             {/* Debug info */}
             <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-sm">
               <p><strong>Info del Sistema:</strong></p>
@@ -471,7 +510,7 @@ const AdminPanel = () => {
               <p>Usuario actual: {JSON.parse(localStorage.getItem('user') || '{}').username || 'No encontrado'}</p>
               <p>Estado de conexión: {localStorage.getItem('token') ? 'Conectado' : 'Desconectado'}</p>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <table className="min-w-full">
                 <thead className="bg-gray-50">
@@ -513,9 +552,8 @@ const AdminPanel = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          (account.status !== false && account.estado !== false) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${(account.status !== false && account.estado !== false) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
                           {(account.status !== false && account.estado !== false) ? 'Activa' : 'Inactiva'}
                         </span>
                       </td>
@@ -523,15 +561,15 @@ const AdminPanel = () => {
                         {account.createdAt ? new Date(account.createdAt).toLocaleDateString('es-GT') : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        <button 
-                          onClick={() => openModal('view', account)} 
+                        <button
+                          onClick={() => openModal('view', account)}
                           className="text-green-600 hover:text-green-900"
                           title="Ver detalles"
                         >
                           <EyeIcon className="h-4 w-4" />
                         </button>
-                        <button 
-                          onClick={() => openModal('edit', account)} 
+                        <button
+                          onClick={() => openModal('edit', account)}
                           className="text-blue-600 hover:text-blue-900"
                           title="Editar"
                         >
@@ -549,7 +587,7 @@ const AdminPanel = () => {
                 </tbody>
               </table>
             </div>
-            
+
             {/* Estadísticas de cuentas */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white p-4 rounded-lg shadow">
@@ -574,11 +612,11 @@ const AdminPanel = () => {
               <div className="bg-white p-4 rounded-lg shadow">
                 <div className="text-sm font-medium text-gray-500">Promedio por Cuenta</div>
                 <div className="text-2xl font-bold text-purple-600">
-                  Q{safeCurrentData.length > 0 ? 
+                  Q{safeCurrentData.length > 0 ?
                     (safeCurrentData.reduce((sum, account) => sum + Number(account.saldo || account.balance || 0), 0) / safeCurrentData.length).toLocaleString('es-GT', {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2
-                    }) 
+                    })
                     : '0.00'}
                 </div>
               </div>
@@ -604,10 +642,10 @@ const AdminPanel = () => {
             </div>
             <div className="space-y-4">
               {safeCurrentData.length > 0 ? safeCurrentData.map((credit) => (
-                <div key={credit._id || credit.id || Math.random()} className="bg-white p-6 rounded-lg shadow">
+                <div key={credit.cid || credit._id || credit.id || Math.random()} className="bg-white p-6 rounded-lg shadow">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold">Solicitud #{credit._id || credit.id}</h3>
+                      <h3 className="text-lg font-semibold">Solicitud #{credit.cid || credit._id || credit.id}</h3>
                       <p className="text-gray-600">Monto: Q{credit.amount}</p>
                       <p className="text-gray-600">Observaciones: {credit.observations || 'N/A'}</p>
                       {credit.user && (
@@ -628,13 +666,12 @@ const AdminPanel = () => {
                       </p>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        credit.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
-                        credit.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${credit.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                          credit.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                        }`}>
                         {credit.status === 'APPROVED' ? 'Aprobado' :
-                         credit.status === 'REJECTED' ? 'Rechazado' : 'Pendiente'}
+                          credit.status === 'REJECTED' ? 'Rechazado' : 'Pendiente'}
                       </span>
                       {credit.status === 'PENDING' && (
                         <>
@@ -700,15 +737,14 @@ const AdminPanel = () => {
                         {transaction._id?.slice(-6) || transaction.id || index + 1}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          transaction.type === 'TRANSFER_OUT' ? 'bg-red-100 text-red-800' :
-                          transaction.type === 'TRANSFER_IN' ? 'bg-green-100 text-green-800' :
-                          transaction.type === 'DEPOSIT' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${transaction.type === 'TRANSFER_OUT' ? 'bg-red-100 text-red-800' :
+                            transaction.type === 'TRANSFER_IN' ? 'bg-green-100 text-green-800' :
+                              transaction.type === 'DEPOSIT' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                          }`}>
                           {transaction.type === 'TRANSFER_OUT' ? 'Salida' :
-                           transaction.type === 'TRANSFER_IN' ? 'Entrada' :
-                           transaction.type === 'DEPOSIT' ? 'Depósito' : transaction.type}
+                            transaction.type === 'TRANSFER_IN' ? 'Entrada' :
+                              transaction.type === 'DEPOSIT' ? 'Depósito' : transaction.type}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -718,15 +754,14 @@ const AdminPanel = () => {
                         {transaction.description || 'Sin descripción'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          transaction.status === false ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-                        }`}>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${transaction.status === false ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                          }`}>
                           {transaction.status === false ? 'Revertida' : 'Completada'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString() : 
-                         transaction.date ? new Date(transaction.date).toLocaleDateString() : 'N/A'}
+                        {transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString() :
+                          transaction.date ? new Date(transaction.date).toLocaleDateString() : 'N/A'}
                       </td>
                     </tr>
                   )) : (
@@ -764,7 +799,7 @@ const AdminPanel = () => {
                 </button>
               </div>
             </div>
-            
+
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <table className="min-w-full">
                 <thead className="bg-gray-50">
@@ -796,9 +831,8 @@ const AdminPanel = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          service.status !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${service.status !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
                           {service.status !== false ? 'Activo' : 'Inactivo'}
                         </span>
                       </td>
@@ -806,22 +840,22 @@ const AdminPanel = () => {
                         {service.createdAt ? new Date(service.createdAt).toLocaleDateString('es-GT') : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        <button 
-                          onClick={() => openModal('view', service)} 
+                        <button
+                          onClick={() => openModal('view', service)}
                           className="text-green-600 hover:text-green-900"
                           title="Ver detalles"
                         >
                           <EyeIcon className="h-4 w-4" />
                         </button>
-                        <button 
-                          onClick={() => openModal('edit', service)} 
+                        <button
+                          onClick={() => openModal('edit', service)}
                           className="text-blue-600 hover:text-blue-900"
                           title="Editar"
                         >
                           <PencilIcon className="h-4 w-4" />
                         </button>
-                        <button 
-                          onClick={() => handleDelete(service._id || service.id)} 
+                        <button
+                          onClick={() => handleDelete(service._id || service.id)}
                           className="text-red-600 hover:text-red-900"
                           title="Eliminar"
                         >
@@ -839,7 +873,7 @@ const AdminPanel = () => {
                 </tbody>
               </table>
             </div>
-            
+
             {/* Estadísticas de servicios */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white p-4 rounded-lg shadow">
@@ -874,10 +908,16 @@ const AdminPanel = () => {
       <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-96 overflow-y-auto">
           <h3 className="text-lg font-medium mb-4">
-            {modalType === 'create' ? 'Crear' : modalType === 'edit' ? 'Editar' : 
-             modalType === 'approve' ? 'Aprobar' : 'Rechazar'} {sections.find(s => s.id === activeSection)?.name}
+            {modalType === 'create' ? 'Crear' : 
+             modalType === 'edit' ? 'Editar' :
+             modalType === 'approve' ? 'Aprobar' : 
+             modalType === 'reject' ? 'Rechazar' :
+             'Ver'} {
+             modalType === 'approve' || modalType === 'reject' ? 'Crédito' : 
+             sections.find(s => s.id === activeSection)?.name
+            }
           </h3>
-          
+
           <div className="space-y-4">
             {activeSection === 'accounts' && modalType === 'create' && (
               <>
@@ -885,12 +925,12 @@ const AdminPanel = () => {
                   type="text"
                   placeholder="ID del Usuario"
                   value={formData.userId || ''}
-                  onChange={(e) => setFormData({...formData, userId: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                 />
                 <select
                   value={formData.tipoCuenta || 'AHORRO'}
-                  onChange={(e) => setFormData({...formData, tipoCuenta: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, tipoCuenta: e.target.value })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                 >
                   <option value="AHORRO">Ahorro</option>
@@ -902,9 +942,53 @@ const AdminPanel = () => {
                   min="0"
                   placeholder="Saldo inicial (ej: 100.00)"
                   value={formData.saldo || ''}
-                  onChange={(e) => setFormData({...formData, saldo: parseFloat(e.target.value) || 0})}
+                  onChange={(e) => setFormData({ ...formData, saldo: parseFloat(e.target.value) || 0 })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                 />
+              </>
+            )}
+
+            {activeSection === 'credits' && (modalType === 'approve' || modalType === 'reject') && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha de vencimiento
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.dueDate || (modalType === 'approve' ? 
+                      new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : 
+                      new Date().toISOString().split('T')[0])}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Observaciones
+                  </label>
+                  <textarea
+                    value={formData.observations || (modalType === 'approve' ? 
+                      "Aprobado por buen historial" : 
+                      "Denegado por mal historial")}
+                    onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    rows="3"
+                    placeholder={modalType === 'approve' ? 
+                      "Motivo de aprobación..." : 
+                      "Motivo de rechazo..."}
+                    required
+                  />
+                </div>
+                {selectedItem && (
+                  <div className="bg-gray-50 p-3 rounded-md">
+                    <h4 className="font-medium text-gray-900 mb-2">Información del crédito:</h4>
+                    <p className="text-sm text-gray-600">Monto: Q{selectedItem.amount}</p>
+                    <p className="text-sm text-gray-600">Solicitante: {selectedItem.user?.name || 'N/A'}</p>
+                    <p className="text-sm text-gray-600">Cuenta: {selectedItem.account?.noCuenta || 'N/A'}</p>
+                  </div>
+                )}
               </>
             )}
 
@@ -916,20 +1000,20 @@ const AdminPanel = () => {
                   min="0"
                   placeholder="Monto (ej: 5000.00)"
                   value={formData.amount || ''}
-                  onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value) || 0})}
+                  onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                 />
                 <input
                   type="text"
                   placeholder="ID de la cuenta"
                   value={formData.accountId || ''}
-                  onChange={(e) => setFormData({...formData, accountId: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                 />
                 <textarea
                   placeholder="Observaciones"
                   value={formData.observations || ''}
-                  onChange={(e) => setFormData({...formData, observations: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                   rows="3"
                 />
@@ -942,21 +1026,21 @@ const AdminPanel = () => {
                   type="text"
                   placeholder="Nombre del servicio"
                   value={formData.name || ''}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                   required
                 />
                 <textarea
                   placeholder="Descripción del servicio"
                   value={formData.description || ''}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                   rows="3"
                   required
                 />
                 <select
                   value={formData.category || ''}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                   required
                 >
@@ -975,7 +1059,7 @@ const AdminPanel = () => {
                       type="checkbox"
                       id="serviceStatus"
                       checked={formData.status !== false}
-                      onChange={(e) => setFormData({...formData, status: e.target.checked})}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.checked })}
                       className="mr-2"
                     />
                     <label htmlFor="serviceStatus" className="text-sm text-gray-700">
@@ -997,7 +1081,7 @@ const AdminPanel = () => {
                   </h3>
                   <p className="text-gray-500">{selectedItem.category || selectedItem.categoria}</p>
                 </div>
-                
+
                 <div className="space-y-3 text-sm">
                   <div>
                     <span className="font-medium text-gray-500">Descripción:</span>
@@ -1043,20 +1127,22 @@ const AdminPanel = () => {
                   handleCreate();
                 } else if (modalType === 'edit') {
                   handleUpdate();
-                } else if (modalType === 'approve') {
-                  setFormData(prev => ({...prev, approve: true}));
-                  handleUpdate();
-                } else if (modalType === 'reject') {
-                  setFormData(prev => ({...prev, approve: false}));
+                } else if (modalType === 'approve' || modalType === 'reject') {
                   handleUpdate();
                 }
               }}
               disabled={loading || (modalType === 'view')}
               className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
-                modalType === 'view' ? 'hidden' : 'bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400'
+                modalType === 'view' ? 'hidden' : 
+                modalType === 'approve' ? 'bg-green-600 hover:bg-green-700 disabled:bg-gray-400' :
+                modalType === 'reject' ? 'bg-red-600 hover:bg-red-700 disabled:bg-gray-400' :
+                'bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400'
               }`}
             >
-              {loading ? 'Procesando...' : 'Confirmar'}
+              {loading ? 'Procesando...' : 
+               modalType === 'approve' ? 'Aprobar Crédito' :
+               modalType === 'reject' ? 'Rechazar Crédito' :
+               'Confirmar'}
             </button>
           </div>
         </div>
@@ -1083,11 +1169,10 @@ const AdminPanel = () => {
                   <button
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
-                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                      activeSection === section.id
+                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${activeSection === section.id
                         ? 'border-blue-500 text-blue-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
+                      }`}
                   >
                     {section.icon}
                     <span>{section.name}</span>

@@ -23,31 +23,27 @@ const AccountBalancePage = () => {
       try {
         const user = JSON.parse(localStorage.getItem("user"));
         const userId = user?.id || user?.userId || user?._id;
-        
+
         if (userId) {
           const result = await getUserAccounts(userId);
-          
-          if (result.error) {
-            setError('Error al cargar los datos de la cuenta');
+
+          if (result.success && result.accounts?.length > 0) {
+            const userAccount = result.accounts[0];
+            setAccount({
+              name: user.name || user.fullName || user.username || 'Usuario',
+              noCuenta: userAccount.noCuenta,
+              saldo: userAccount.saldo || 0,
+              tipoCuenta: userAccount.tipoCuenta || 'AHORRO',
+              updatedAt: userAccount.updatedAt || new Date().toISOString()
+            });
           } else {
-            // Actualizar según estructura de respuesta de la API
-            const userAccount = result.data?.accounts?.[0];
-            if (userAccount) {
-              setAccount({
-                name: user.name || user.fullName || user.username || 'Usuario',
-                noCuenta: userAccount.noCuenta,
-                saldo: userAccount.saldo || 0,
-                tipoCuenta: userAccount.tipoCuenta || 'AHORRO',
-                updatedAt: userAccount.updatedAt || new Date().toISOString()
-              });
-            } else {
-              setError('No se encontraron cuentas asociadas');
-            }
+            setError('No se encontraron cuentas asociadas');
           }
         } else {
           setError('Usuario no identificado');
         }
       } catch (err) {
+        console.error(err);
         setError('Error al conectar con el servidor');
       } finally {
         setLoading(false);
@@ -144,23 +140,23 @@ const AccountBalancePage = () => {
         </div>
       </div>
       <Footer 
-            products={[
-                { id: 1, title: 'Cuentas de Ahorro' },
-                { id: 2, title: 'Tarjetas de Crédito' },
-                { id: 3, title: 'Préstamos' },
-                { id: 4, title: 'Seguros de Vida' }
-            ]}
-            helpTopics={[
-                { id: 1, title: 'Preguntas Frecuentes', link: '/HelpList' },
-                { id: 2, title: 'Soporte Técnico', link: '/ContactList' },
-                { id: 3, title: 'Términos y Condiciones', link: '#' }
-            ]}
-            contactMethods={[
-                { id: 1, title: 'Teléfono', details: '1234-5678' },
-                { id: 2, title: 'Email', details: 'info@banco.gt' },
-                { id: 3, title: 'Sucursales', details: '50+ ubicaciones' }
-            ]}
-        />
+        products={[
+          { id: 1, title: 'Cuentas de Ahorro' },
+          { id: 2, title: 'Tarjetas de Crédito' },
+          { id: 3, title: 'Préstamos' },
+          { id: 4, title: 'Seguros de Vida' }
+        ]}
+        helpTopics={[
+          { id: 1, title: 'Preguntas Frecuentes', link: '/HelpList' },
+          { id: 2, title: 'Soporte Técnico', link: '/ContactList' },
+          { id: 3, title: 'Términos y Condiciones', link: '#' }
+        ]}
+        contactMethods={[
+          { id: 1, title: 'Teléfono', details: '1234-5678' },
+          { id: 2, title: 'Email', details: 'info@banco.gt' },
+          { id: 3, title: 'Sucursales', details: '50+ ubicaciones' }
+        ]}
+      />
     </>
   );
 };

@@ -35,11 +35,11 @@ const CreditCardRequestForm = () => {
 
     try {
       const user = JSON.parse(localStorage.getItem("user"));
-      const userId = user?.id || user?.userId || user?._id;
+      const noCuenta = user?.noCuenta;
 
       const creditData = {
         amount: parseFloat(form.creditLine),
-        accountId: userId, // Usar el ID del usuario como accountId
+        accountId: noCuenta, // Usar el número de cuenta desde localStorage
         observations: `Solicitud de tarjeta de crédito - ${form.name}. Ingresos: Q${form.income}. Estilo: ${form.cardStyle}`,
       };
 

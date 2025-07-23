@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   UserGroupIcon,
@@ -7,17 +7,13 @@ import {
   ChartBarIcon,
   DocumentTextIcon,
   ShieldCheckIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  EyeIcon,
   PencilIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
 import { Navbar } from '../../components/navbar';
-import { 
-  getAllUsers, 
-  getCreditRequests, 
+import {
+  getAllUsers,
+  getCreditRequests,
   processCredit,
   getRecentMovements,
   getServices,
@@ -27,6 +23,7 @@ import {
 } from '../../services/api';
 
 const AdminDashboard = () => {
+  const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({
@@ -40,21 +37,29 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isAuthenticated()) {
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    
+    if (!storedUser) {
       navigate('/login');
       return;
     }
 
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user?.isAdmin && user?.role !== 'admin' && !user?.email?.includes('admin')) {
-      navigate('/HomePage');
-      return;
+    // Verificar que el token esté presente
+    let token = localStorage.getItem('token');
+    if (!token && storedUser.token) {
+      localStorage.setItem('token', storedUser.token);
     }
 
-    loadData();
+    setUser(storedUser);
   }, [navigate]);
 
-  const loadData = async () => {
+  useEffect(() => {
+    if (!user) return; // Esperar a tener usuario validado
+
+    loadData();
+  }, [user, loadData]);
+
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [usersRes, creditsRes, transactionsRes, servicesRes] = await Promise.all([
@@ -65,17 +70,21 @@ const AdminDashboard = () => {
       ]);
 
       setData({
-        users: usersRes.data || [],
-        creditRequests: creditsRes.data || [],
-        transactions: transactionsRes.data || [],
-        services: servicesRes.data || []
+        users: usersRes.data || usersRes || [],
+        creditRequests: creditsRes.data || creditsRes || [],
+        transactions: transactionsRes.data || transactionsRes || [],
+        services: servicesRes.data || servicesRes || []
       });
     } catch (error) {
       console.error('Error loading admin data:', error);
+      // Si hay un error de autenticación, redirigir
+      if (error.message?.includes('autorizado') || error.message?.includes('token')) {
+        navigate('/login');
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
 
   const handleCreditAction = async (creditId, action) => {
     try {
@@ -150,6 +159,17 @@ const AdminDashboard = () => {
     { id: 'services', name: 'Servicios', icon: <DocumentTextIcon className="h-5 w-5" /> }
   ];
 
+  if (!user) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center">
+          <p>Cargando usuario...</p>
+        </div>
+      </>
+    );
+  }
+
   if (loading) {
     return (
       <>
@@ -200,11 +220,10 @@ const AdminDashboard = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === tab.id
+                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
                         ? 'border-blue-500 text-blue-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
+                      }`}
                   >
                     {tab.icon}
                     <span>{tab.name}</span>
@@ -229,7 +248,7 @@ const AdminDashboard = () => {
                         ))}
                       </div>
                     </div>
-                    
+
                     <div className="bg-gray-50 rounded-lg p-6">
                       <h3 className="text-lg font-medium text-gray-900 mb-4">Créditos Pendientes</h3>
                       <div className="space-y-3">
@@ -250,14 +269,14 @@ const AdminDashboard = () => {
                 <div>
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-medium text-gray-900">Gestión de Usuarios</h3>
-                    <button 
+                    <button
                       onClick={loadData}
                       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
                     >
                       Actualizar
                     </button>
                   </div>
-                  
+
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
@@ -286,13 +305,13 @@ const AdminDashboard = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                              <button 
+                              <button
                                 onClick={() => handleEditUser(user)}
                                 className="text-blue-600 hover:text-blue-900"
                               >
                                 <PencilIcon className="h-4 w-4" />
                               </button>
-                              <button 
+                              <button
                                 onClick={() => handleDeleteUser(user.id)}
                                 className="text-red-600 hover:text-red-900"
                               >
@@ -311,7 +330,7 @@ const AdminDashboard = () => {
               {activeTab === 'credits' && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-6">Solicitudes de Crédito</h3>
-                  
+
                   <div className="space-y-4">
                     {data.creditRequests.map((credit) => (
                       <div key={credit.id} className="bg-gray-50 rounded-lg p-4">
@@ -338,13 +357,12 @@ const AdminDashboard = () => {
                                 </button>
                               </>
                             )}
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                              credit.status === 'approved' ? 'bg-green-100 text-green-800' :
-                              credit.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                              'bg-yellow-100 text-yellow-800'
-                            }`}>
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${credit.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                credit.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                  'bg-yellow-100 text-yellow-800'
+                              }`}>
                               {credit.status === 'approved' ? 'Aprobado' :
-                               credit.status === 'rejected' ? 'Rechazado' : 'Pendiente'}
+                                credit.status === 'rejected' ? 'Rechazado' : 'Pendiente'}
                             </span>
                           </div>
                         </div>
@@ -358,7 +376,7 @@ const AdminDashboard = () => {
               {activeTab === 'transactions' && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-6">Transacciones Recientes</h3>
-                  
+
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
@@ -396,7 +414,7 @@ const AdminDashboard = () => {
               {activeTab === 'services' && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-6">Servicios Contratados</h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {data.services.map((service, index) => (
                       <div key={index} className="bg-gray-50 rounded-lg p-4">
@@ -429,48 +447,49 @@ const AdminDashboard = () => {
                   phone: formData.get('phone')
                 });
               }}>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Nombre</label>
-                    <input
-                      type="text"
-                      name="name"
-                      defaultValue={selectedUser.name}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <input
-                      type="email"
-                      name="email"
-                      defaultValue={selectedUser.email}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Teléfono</label>
-                    <input
-                      type="text"
-                      name="phone"
-                      defaultValue={selectedUser.phone}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
-                    />
-                  </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1" htmlFor="name">Nombre</label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    defaultValue={selectedUser.name}
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    required
+                  />
                 </div>
-                <div className="mt-6 flex justify-end space-x-3">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1" htmlFor="email">Email</label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    defaultValue={selectedUser.email}
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1" htmlFor="phone">Teléfono</label>
+                  <input
+                    type="text"
+                    id="phone"
+                    name="phone"
+                    defaultValue={selectedUser.phone}
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
                   <button
                     type="button"
                     onClick={() => setShowUserModal(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                    className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                    className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
                   >
                     Guardar
                   </button>
