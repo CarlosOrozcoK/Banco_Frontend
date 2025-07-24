@@ -208,10 +208,7 @@ export const transfer = async (originAccount, data) => {
 export const getRecentMovements = async () => {
   try {
     const response = await apiClient.get("/transactions/my/recent");
-
-    const transactions = response.data.transactions || [];
-
-    return { data: transactions };
+    return { data: response.data };
   } catch (e) {
     return { error: true, response: e.response };
   }
