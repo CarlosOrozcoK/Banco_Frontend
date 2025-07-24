@@ -928,14 +928,19 @@ const AdminPanel = () => {
                   onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                 />
-                <select
-                  value={formData.tipoCuenta || 'AHORRO'}
-                  onChange={(e) => setFormData({ ...formData, tipoCuenta: e.target.value })}
+                
+               <select
+                  value={formData.tipoCuenta || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, tipoCuenta: e.target.value })
+                  }
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                 >
+                  <option value="">Elegir tipo de cuenta</option>
                   <option value="AHORRO">Ahorro</option>
-                  <option value="CORRIENTE">Corriente</option>
+                  <option value="MONETARIA">Monetaria</option>
                 </select>
+
                 <input
                   type="number"
                   step="0.01"
