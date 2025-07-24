@@ -19,7 +19,7 @@ const ContactList = () => {
       email: 'consultas.financieras@banguat.gob.gt', 
       phone: '2422-1444', 
       department: 'Asesoría Financiera', 
-      position: 'Asesora Senior',
+      position: 'Asesor Senior',
       extension: '205',
       schedule: 'Lunes a Viernes 9:00 - 15:00'
     },
@@ -50,11 +50,10 @@ const ContactList = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Encabezado institucional */}
         <div className="bg-blue-900 text-white p-6 rounded-t-lg shadow-md">
           <div className="flex items-center">
             <img 
-              src="./src/assets/Logo Banco Nacional de Guatemala.png" 
+              src="./src/assets/logo_banco.png" 
               alt="Logo Banco de Guatemala" 
               className="h-16 mr-4"
             />
@@ -64,8 +63,6 @@ const ContactList = () => {
             </div>
           </div>
         </div>
-        
-        {/* Información importante */}
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 my-4">
           <div className="flex">
             <div className="flex-shrink-0">

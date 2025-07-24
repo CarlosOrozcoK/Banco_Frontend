@@ -5,6 +5,7 @@ import {
   CogIcon,
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
+import logoBanco from '../assets/logo_banco.png';
 
 export const Navbar = ({ onLoginClick }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -71,7 +72,7 @@ export const Navbar = ({ onLoginClick }) => {
     navigate("/login");
   };
 
-  return (
+   return (
     <header className="bg-gradient-to-r from-blue-800 to-blue-600 shadow-lg z-40 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <div
@@ -79,15 +80,15 @@ export const Navbar = ({ onLoginClick }) => {
           onClick={() => navigate("/HomePage")}
         >
           <div className="bg-white p-2 rounded-lg">
-    <img
-      src="./src/assets/Logo Banco Nacional de Guatemala.png"
-      alt="Logo Banco de Guatemala"
-      className="h-8 w-8 object-contain"
-    />
-  </div>
+            <img
+              src={logoBanco} 
+              alt="Logo Banco de Guatemala"
+              className="h-8 w-8 object-contain"
+            />
+          </div>
           <h1 className="text-2xl font-bold text-white">Banco de Guatemala</h1>
         </div>
-
+         
         <div className="flex items-center space-x-4">
           {isLoggedIn ? (
             <>
